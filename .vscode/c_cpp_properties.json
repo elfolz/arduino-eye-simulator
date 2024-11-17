@@ -2,24 +2,6 @@
     "version": 4,
     "configurations": [
         {
-            "name": "Win32",
-            "compilerPath": "",
-            "compilerArgs": [],
-            "intelliSenseMode": "",
-            "includePath": [
-                "${workspaceFolder}/**",
-                "C:/Users/Elfo/Documents/Arduino/libraries/**"
-            ],
-            "forcedInclude": [],
-            "cStandard": "",
-            "cppStandard": "",
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE"
-            ]
-        },
-        {
             "name": "Arduino",
             "compilerPath": "C:\\Users\\Elfo\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esp-x32\\2302\\bin\\xtensa-esp32-elf-g++",
             "compilerArgs": [
@@ -36,12 +18,13 @@
                 "C:\\Users\\Elfo\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esp32-arduino-libs\\idf-release_v5.1-632e0c2a\\esp32\\qio_qspi\\include",
                 "C:\\Users\\Elfo\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.0.7\\cores\\esp32",
                 "C:\\Users\\Elfo\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.0.7\\variants\\esp32",
-                "C:\\Users\\Elfo\\Documents\\Arduino\\libraries\\Adafruit_GFX_Library",
+                "C:\\Users\\Elfo\\Documents\\Arduino\\libraries\\Adafruit_GFX_library",
                 "C:\\Users\\Elfo\\Documents\\Arduino\\libraries\\Adafruit_BusIO",
                 "C:\\Users\\Elfo\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.0.7\\libraries\\Wire\\src",
                 "C:\\Users\\Elfo\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.0.7\\libraries\\SPI\\src",
                 "C:\\Users\\Elfo\\Documents\\Arduino\\libraries\\Adafruit_SSD1351_library",
                 "C:\\Users\\Elfo\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.0.7\\libraries\\BLE\\src",
+                "C:\\Users\\Elfo\\Documents\\Arduino\\libraries\\Regexp\\src",
                 "c:\\users\\elfo\\appdata\\local\\arduino15\\packages\\esp32\\tools\\esp-x32\\2302\\xtensa-esp32-elf\\include\\c++\\12.2.0",
                 "c:\\users\\elfo\\appdata\\local\\arduino15\\packages\\esp32\\tools\\esp-x32\\2302\\xtensa-esp32-elf\\include\\c++\\12.2.0\\xtensa-esp32-elf",
                 "c:\\users\\elfo\\appdata\\local\\arduino15\\packages\\esp32\\tools\\esp-x32\\2302\\xtensa-esp32-elf\\include\\c++\\12.2.0\\backward",

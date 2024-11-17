@@ -3,5 +3,6 @@
     "board": "esp32:esp32:esp32wrover",
     "port": "COM5",
     "programmer": "esptool",
-    "sketch": "eye-simulator\\eye-simulator.ino"
+    "sketch": "eye-simulator\\eye-simulator.ino",
+		"output": ".\\build"
 }

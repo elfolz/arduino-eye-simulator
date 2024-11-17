@@ -1,12 +1,21 @@
-const bleServiceUUID = '098f6372-826e-43c8-a45f-d29382e382d4'
-const bleCharacteristicUUID = '9e423521-9ca6-4ed2-b0f4-079653fdc879'
+const bleServiceUUID = '0888fddd-b50d-4710-aa9b-17051f1b4948'
+const bleCharacteristicReadUUID = 'b2d07323-8815-4a88-9bae-27c835524aee'
+const bleCharacteristicWriteUUID = 'd359723f-1a25-477b-9070-e7483e231aef'
 const decoder = new TextDecoder()
+const encoder = new TextEncoder()
 const usbBaudRate = 115200
 
+const eyeColor = localStorage.getItem('eyeColor')
+
+var colorPicker
 var usbDevice
 var bleDevice
+var bleCharacteristicRead
+var bleCharacteristicWrite
+var bleDescriptor
 var deviceInfo
-var reader
+var usbReader
+var usbWriter
 var dialog
 var buttonUSB
 var buttonBLE
@@ -26,20 +35,40 @@ if (location.protocol.startsWith('https')) {
 
 function init() {
 	dialog = document.querySelector('dialog')
-	buttonUSB = document.querySelector('#connectUSB')
-	buttonBLE = document.querySelector('#connectBLE')
+	colorPicker = document.querySelector('#color-picker')
+	buttonUSB = document.querySelector('#connect-usb')
+	buttonBLE = document.querySelector('#connect-ble')
 	if (!'serial' in navigator && !'bluetooth' in navigator) {
 		return openDialog('Este App não funciona em neste dispositivo 😥', true)
 	}
 	if (!'serial' in navigator) buttonUSB.style.setProperty('display', 'none')
 	if (!'bluetooth' in navigator) buttonBLE.style.setProperty('display', 'none')
+	handleColorPicker()
 	waitForDevice()
-	/* navigator.serial.getPorts()
-	.then(response => {
-		if (response?.length) connectSerialDevice(response[0])
-	}) */
 	dialog.querySelector('section svg').onclick = () => {
 		closeDialog()
+	}
+}
+
+function handleColorPicker() {
+	if (localStorage.getItem('eyeColor')) {
+		document.querySelector('input[type=color]').value = localStorage.getItem('eyeColor')
+	}
+	colorPicker.oninput = e => {
+		const color = e.target.value
+		if (!color) return localStorage.removeItem('eyeColor')
+		localStorage.setItem('eyeColor', color)
+		syncColor(color)
+	}
+}
+
+function syncColor(color) {
+	const c = `eyeColor${rgb565color(color)}\n`
+	if (usbDevice?.connected && usbWriter) {
+		usbWriter.write(encoder.encode(c))
+	}
+	if (bleCharacteristicWrite) {
+		try { bleCharacteristicWrite.writeValue(encoder.encode(c)) } catch(e) {}
 	}
 }
 
@@ -49,6 +78,7 @@ function waitForDevice() {
 			filters: [{usbVendorId: 0x10C4}]
 		})
 		.then(device => {
+			console.log(device)
 			disconnectSerialDevice()
 			if (device) connectSerialDevice(device)
 		})
@@ -80,7 +110,8 @@ function connectSerialDevice(device) {
 		deviceInfo = `${device.getInfo().usbVendorId}__${device.getInfo().usbProductId}`
 		console.info(`Connected to ${deviceInfo}`)
 		disableAll()
-		reader = device.readable.getReader()
+		usbReader = device.readable.getReader()
+		usbWriter = device.writable.getWriter()
 		read()
 	})
 	.catch(e => {
@@ -92,34 +123,33 @@ function connectSerialDevice(device) {
 
 async function disconnectSerialDevice() {
 	try {
-		await reader?.cancel()
-		await reader?.releaseLock()
+		await usbReader?.cancel()
+		await usbReader?.releaseLock()
 		await usbDevice?.close()
 	} catch(e){}
-	reader = undefined
+	usbReader = undefined
 }
 
 function connectBLEDevice(device) {
 	bleDevice = device
-	device.gatt.connect(device)
-	.then(server => {
-		device.addEventListener('gattserverdisconnected', () => {
-			openDialog('Bluetooth desconectado')
-			buttonBLE.removeAttribute('disabled')
-		})
-		return server.getPrimaryService(bleServiceUUID)
-		.then(service => {
-			return service.getCharacteristic(bleCharacteristicUUID)
-			.then(characteristic => {
-				deviceInfo = device.id
-				console.info(`Connected to ${deviceInfo}`)
-				disableAll()
-				return characteristic.startNotifications()
-				.then(() => {
-					characteristic.addEventListener('characteristicvaluechanged', e => {
-						writeText(e.target.value)
-					})
-				})
+	bleDevice.addEventListener('gattserverdisconnected', () => {
+		openDialog('Bluetooth desconectado')
+		buttonBLE.removeAttribute('disabled')
+	})
+	device.gatt.connect()
+	.then(server => server.getPrimaryService(bleServiceUUID))
+	.then(service => service.getCharacteristics())
+	.then(characteristics => {
+		bleCharacteristicRead = characteristics.find(el => el.uuid == bleCharacteristicReadUUID)
+		bleCharacteristicWrite = characteristics.find(el => el.uuid == bleCharacteristicWriteUUID)
+		deviceInfo = `${device.name.replace(' ', '-')}__${device.id}`
+		console.info(`Connected to ${deviceInfo}`)
+		disableAll()
+		if (eyeColor) syncColor(eyeColor)
+		return bleCharacteristicRead.startNotifications()
+		.then(() => {
+			bleCharacteristicRead.addEventListener('characteristicvaluechanged', e => {
+				writeText(decoder.decode(e.target.value))
 			})
 		})
 	})
@@ -131,10 +161,11 @@ function connectBLEDevice(device) {
 }
 
 function read() {
-	if (!reader) return
-	reader.read()
+	usbReader?.read()
 	.then(response => {
-		if (/\n/.test(chunks)) {
+		if (response.done) {
+			return usbReader.releaseLock()
+		} else if (/\n/.test(chunks)) {
 			writeText(chunks)
 			chunks = ""
 		}
@@ -151,9 +182,19 @@ function read() {
 
 function writeText(text) {
 	if (document.hidden) return
-	console.log(text)
 	/* document.querySelector('#content').innerHTML += text
 	document.querySelector('#caret').scrollIntoView({behavior: 'smooth'}) */
+}
+
+function rgb565color(color) {
+	const hex = '0x'+color.replace('#', '')
+	const red =  (hex >> 16) & 0xFF
+	const green = (hex >> 8) & 0xFF
+	const blue = hex & 0xFF
+	let red5 = (red >> 3) & 0x1F
+	let green6 = (green >> 2) & 0x3F
+	let blue5 = (blue >> 3) & 0x1F
+	return '0x' + ((red5 << 11) | (green6 << 5) | blue5).toString(16).toUpperCase().padStart(4, '0')
 }
 
 function openDialog(text, disableClose=false) {
@@ -175,14 +216,16 @@ function closeDialog() {
 function enableAll() {
 	buttonBLE.removeAttribute('disabled')
 	buttonUSB.removeAttribute('disabled')
+	colorPicker.setAttribute('disabled', 'true')
 }
 
 function disableAll() {
 	buttonBLE.setAttribute('disabled', 'true')
 	buttonUSB.setAttribute('disabled', 'true')
+	colorPicker.removeAttribute('disabled')
 }
 
 document.onreadystatechange = () => {
 	if (document.readyState == 'complete') init()
 }
-window.onbeforeunload = async () => disconnectSerialDevice()
+/* window.onbeforeunload = async () => disconnectSerialDevice() */
