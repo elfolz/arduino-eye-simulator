@@ -35,7 +35,7 @@ h1 {
 main {
 	display: flex;
 	margin: 0 auto;
-	height: calc(100dvh - 52px - 24px);
+	height: calc(100dvh - 24px - min(16dvw, 16dvh, 72px));
 	overflow-y: auto;
 }
 footer {
@@ -78,8 +78,8 @@ dialog.close {
 	position: fixed;
 	top: 50%;
 	left: 50%;
-	height: 80px;
-	width: 80px;
+	height: min(40dvw, 40dvh, 192px);
+	width: min(40dvw, 40dvh, 192px);
 	cursor: pointer;
 }
 #color-picker span:first-of-type {
@@ -123,8 +123,8 @@ input[type=color]::-webkit-color-swatch {
 	border: none;
 }
 button {
-	height: 52px;
-	aspect-ratio: 1/1;
+	width: min(16dvw, 16dvh, 72px);
+	height: min(16dvw, 16dvh, 72px);
 	border: none;
 	text-transform: uppercase;
 }
